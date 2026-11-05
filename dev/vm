@@ -1,0 +1,52 @@
+#!/bin/bash
+# A throwaway Lima VM that builds bpfilter from source, to develop and test bpyfilter against it.
+#   dev/vm create            create it, boot it, build bpfilter v0.8.0 (takes a while)
+#   dev/vm test [ARGS]       install this checkout in the VM and run the tests (ARGS go to pytest)
+#   dev/vm shell [CMD ...]   a root shell (or one command) in the VM, in /src/bpyfilter
+#   dev/vm bpfilter REF      rebuild bpfilter at another tag, branch or commit
+#   dev/vm delete            throw it away
+# VM=name to run several; LIMACTL=path if limactl isn't on your PATH.
+set -euo pipefail
+
+ROOT=$(cd "$(dirname "$0")/.." && pwd)
+LIMACTL="${LIMACTL:-$(command -v limactl || echo "$HOME/.local/lima/bin/limactl")}"
+VM="${VM:-bpyfilter-dev}"
+
+lima() { "$LIMACTL" "$@"; }
+in_vm() { lima shell --workdir /src/bpyfilter "$VM" sudo "$@"; }
+
+case "${1:-}" in
+  create)
+    mount=".mounts = [{\"location\": \"$ROOT\", \"mountPoint\": \"/src/bpyfilter\", \"writable\": true}]"
+    lima create --name "$VM" --tty=false --set "$mount" "$ROOT/dev/lima.yaml"
+    # Building bpfilter can outlast limactl's 10-minute wait: if it gives up, the build
+    # keeps going in the VM; `dev/vm shell cat /var/lib/bpyfilter-dev/bpfilter-ref` when done.
+    lima start --tty=false "$VM"
+    ;;
+  test)
+    shift
+    in_vm sh -c 'cd /tmp \
+      && rm -rf /src/bpyfilter/build /src/bpyfilter/*.egg-info \
+      && python3 -m pip install -q --root-user-action=ignore --force-reinstall --no-deps /src/bpyfilter \
+      && rm -rf /src/bpyfilter/build /src/bpyfilter/*.egg-info \
+      && python3 -m pytest -p no:cacheprovider -ra /src/bpyfilter/tests "$@"' test "$@"
+    ;;
+  shell)
+    shift
+    if [ $# -eq 0 ]; then
+      lima shell --workdir /src/bpyfilter "$VM" sudo bash -l
+    else
+      in_vm "$@"
+    fi
+    ;;
+  bpfilter)
+    in_vm env FORCE=1 bash /src/bpyfilter/dev/provision.sh "${2:?usage: dev/vm bpfilter REF}"
+    ;;
+  delete)
+    lima delete -f "$VM"
+    ;;
+  *)
+    sed -n '2,8s/^# \{0,1\}//p' "$0"
+    exit 1
+    ;;
+esac

@@ -1,0 +1,26 @@
+# A throwaway Lima VM to build and test bpyfilter against bpfilter built from source.
+# Don't use this file directly: `dev/vm create` mounts this checkout at /src/bpyfilter.
+minimumLimaVersion: 2.0.0
+
+base:
+- template:_images/fedora-44
+
+vmType: vz
+cpus: 4
+memory: 4GiB
+disk: 20GiB
+
+containerd:
+  system: false
+  user: false
+
+propagateProxyEnv: false
+
+# dev/vm create adds the mount: this checkout at /src/bpyfilter, writable.
+mounts: []
+
+provision:
+- mode: system
+  script: |
+    #!/bin/bash
+    exec bash /src/bpyfilter/dev/provision.sh
