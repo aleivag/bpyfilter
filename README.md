@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/aleivag/bpyfilter/main/docs/logo/logo-dark-mode.png">
+    <img alt="bpyfilter" src="https://raw.githubusercontent.com/aleivag/bpyfilter/main/docs/logo/logo-light-mode.png" width="360">
+  </picture>
+</p>
+
 # bpyfilter
 
 Crazy idea... write firewalls in Python (technically, write [bpfilter](https://bpfilter.io) programs in Python, but bpfotato, bpftata).
