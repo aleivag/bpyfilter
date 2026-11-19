@@ -10,7 +10,7 @@ set -euxo pipefail
 BPFILTER_VERSION=v0.8.0
 LIBBPF_VERSION=v1.8.0
 
-# manylinux_2_28 is AlmaLinux 8: clang compiles bpfilter's BPF stubs, xxd embeds
+# manylinux_2_34 is AlmaLinux 9: clang compiles bpfilter's BPF stubs, xxd embeds
 # them, bison and flex build bfcli (part of bpfilter's build).
 dnf install -y --setopt=install_weak_deps=False \
   clang bison flex vim-common elfutils-libelf-devel zlib-devel pkgconf-pkg-config
@@ -19,7 +19,7 @@ WORK=$(mktemp -d)
 # GitHub's tag archives come from `git archive`, which fills in the version
 # bpfilter's CMake reads when there's no .git.
 curl -fsSL "https://github.com/libbpf/libbpf/archive/refs/tags/${LIBBPF_VERSION}.tar.gz" | tar -xz -C "$WORK"
-curl -fsSL "https://github.com/facebook/bpfilter/archive/refs/tags/${BPFILTER_VERSION}.tar.gz" | tar -xz -C "$WORK"
+curl -fsSL "https://github.com/meta/bpfilter/archive/refs/tags/${BPFILTER_VERSION}.tar.gz" | tar -xz -C "$WORK"
 
 # libbpf, with its copy of the kernel's BPF UAPI headers (newer than the image's).
 make -C "$WORK/libbpf-${LIBBPF_VERSION#v}/src" -j"$(nproc)" \

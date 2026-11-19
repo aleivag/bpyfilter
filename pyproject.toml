@@ -61,5 +61,8 @@ test-command = "pytest -ra tests"
 [tool.cibuildwheel.linux]
 # One runner per architecture (see .github/workflows/release.yml), no emulation.
 archs = ["native"]
-manylinux-x86_64-image = "manylinux_2_28"
-manylinux-aarch64-image = "manylinux_2_28"
+# manylinux_2_34 (AlmaLinux 9, glibc 2.34): libbpfilter calls strerrordesc_np()
+# (glibc >= 2.32), and bfcli, part of bpfilter's build, needs bison >= 3.6. Any
+# system with a kernel recent enough for bpfilter has glibc >= 2.34 anyway.
+manylinux-x86_64-image = "manylinux_2_34"
+manylinux-aarch64-image = "manylinux_2_34"
