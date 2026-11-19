@@ -35,6 +35,22 @@ chain no_ping BF_HOOK_NF_LOCAL_IN{priorities=101-102} ACCEPT
         DROP
 ```
 
+## Installing
+
+```bash
+pip install bpyfilter
+```
+
+The wheels (Linux, x86_64 and aarch64, CPython 3.11+) bundle their own
+libbpfilter: you don't need bpfilter installed. They're built from
+[bpfilter v0.8.0](https://github.com/facebook/bpfilter/tree/v0.8.0) and
+[libbpf v1.8.0](https://github.com/libbpf/libbpf/tree/v1.8.0), by
+`ci/build-bpfilter.sh`. Loading BPF programs still needs root (or the right
+capabilities) and a recent kernel.
+
+Installing from source (the sdist, or this repository) builds against the
+libbpfilter installed on the system, which must be bpfilter 0.8.
+
 ## Hooks
 
 Chains have hooks: a hook is where a chain is attached, and it decides what the chain sees. A hook is called with the options
