@@ -1,17 +1,71 @@
 [build-system]
-requires = ["setuptools>=64", "Cython>=3"]
+requires = ["setuptools>=77", "Cython>=3"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "bpyfilter"
-version = "0.2.0"
+# The bundled bpfilter's version, plus bpyfilter's own revision: 0.8.0.1 is the
+# first release built on bpfilter 0.8.0. ci/build-bpfilter.sh builds the bpfilter
+# tag named by the first three numbers.
+version = "0.8.0.1"
 description = "Python bindings for bpfilter 0.8: BPF-based packet filtering, from Python"
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "GPL-2.0-only" }   # links libbpfilter, which is GPL-2.0-only
+# Links libbpfilter, which is GPL-2.0-only.
+license = "GPL-2.0-only"
+license-files = ["LICENSE"]
+authors = [{ name = "Alvaro Leiva Geisse", email = "aleivag@gmail.com" }]
+keywords = ["bpfilter", "bpf", "ebpf", "firewall", "netfilter", "xdp"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Cython",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
+    "Topic :: System :: Networking :: Firewalls",
+]
+
+[project.urls]
+Homepage = "https://github.com/aleivag/bpyfilter"
+Issues = "https://github.com/aleivag/bpyfilter/issues"
+bpfilter = "https://bpfilter.io"
+
+[dependency-groups]
+test = ["pytest"]
+dev = [{ include-group = "test" }]
 
 [tool.setuptools]
 packages = ["bpyfilter"]
 
 [tool.setuptools.package-data]
 bpyfilter = ["*.pxd", "*.pyx"]
+
+# Wheels: built in manylinux containers, with libbpfilter (and libbpf) built from
+# source by ci/build-bpfilter.sh and bundled into each wheel by auditwheel.
+[tool.cibuildwheel]
+build-frontend = "build[uv]"
+# musllinux: bpfilter isn't tested on musl. Free-threaded Python: bpyfilter's
+# thread safety (libbpfilter's context is process-wide) isn't checked yet.
+skip = ["*-musllinux_*", "cp3??t-*"]
+before-all = "bash ci/build-bpfilter.sh"
+test-groups = ["test"]
+test-sources = ["tests", "examples"]
+# The container can't load BPF programs, so the integration tests skip
+# themselves: this checks that the wheel imports with its bundled libraries,
+# and runs everything that doesn't need the kernel.
+test-command = "pytest -ra tests"
+
+[tool.cibuildwheel.linux]
+# One runner per architecture (see .github/workflows/release.yml), no emulation.
+archs = ["native"]
+# manylinux_2_34 (AlmaLinux 9, glibc 2.34): libbpfilter calls strerrordesc_np()
+# (glibc >= 2.32), and bfcli, part of bpfilter's build, needs bison >= 3.6. Any
+# system with a kernel recent enough for bpfilter has glibc >= 2.34 anyway.
+manylinux-x86_64-image = "manylinux_2_34"
+manylinux-aarch64-image = "manylinux_2_34"

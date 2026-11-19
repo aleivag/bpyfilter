@@ -565,23 +565,33 @@ def test_log_layers():
 
 # --- integration: root + libbpfilter (no daemon) --------------------------------
 
-def _daemon_up():
+def _bpfilter_usable():
+    """Can libbpfilter load and pin a chain here? It needs root (or CAP_BPF and
+    CAP_NET_ADMIN) and a writable bpffs, which containers (cibuildwheel's
+    included) usually don't have. Asking for a missing chain isn't enough: that
+    answers ENOENT without touching bpffs."""
     if os.geteuid() != 0:
         return False
+    name = f"probe-{uuid.uuid4().hex[:8]}"
     try:
-        bpyfilter.get(f"probe-{uuid.uuid4().hex}")
-    except BpfilterError as e:
-        return e.errno == 2  # ENOENT: libbpfilter answered "no such chain"
+        Chain(name, Hook.XDP).rule(ip4.proto == "icmp", verdict=Verdict.DROP).install()   # loaded, not attached
+    except OSError:
+        return False
+    bpyfilter.flush(name)
     return True
 
 
-needs_bpfilter = pytest.mark.skipif(not _daemon_up(), reason="needs root and bpfilter 0.8")
+needs_bpfilter = pytest.mark.skipif(not _bpfilter_usable(),
+                                    reason="needs root, bpfilter 0.8 and a writable bpffs")
 
 
 @pytest.fixture
 def cgroup():
     cg = Path("/sys/fs/cgroup") / f"bpyfilter-test-{uuid.uuid4().hex[:8]}"
-    cg.mkdir()
+    try:
+        cg.mkdir()
+    except OSError as e:                # e.g. a read-only cgroupfs, in a container
+        pytest.skip(f"can't create a cgroup: {e}")
     yield cg
     cg.rmdir()
 
@@ -719,8 +729,8 @@ def test_update_set_in_place(cgroup):
         assert _ping(cgroup, "127.0.0.2") and not _ping(cgroup, "127.0.0.3")
         assert chain.counters().attached
         assert blocked._text() == "{127.0.0.3}"                 # the local set follows
-        listed = subprocess.run(["bfcli", "chain", "get", "--name", chain.name], capture_output=True, text=True)
-        assert "127.0.0.3" in listed.stdout and "127.0.0.2" not in listed.stdout
+        listed = str(Chain.load(chain.name))             # read back from bpfilter
+        assert "127.0.0.3" in listed and "127.0.0.2" not in listed
     finally:
         chain.flush()
 
@@ -732,8 +742,8 @@ def test_update_set_on_a_loaded_chain():
     chain.rule(blocked, verdict=Verdict.DROP).install()                  # loaded, not attached
     try:
         chain.update_set(blocked, add=["127.0.0.3"])
-        listed = subprocess.run(["bfcli", "chain", "get", "--name", chain.name], capture_output=True, text=True)
-        assert "127.0.0.2" in listed.stdout and "127.0.0.3" in listed.stdout
+        listed = str(Chain.load(chain.name))             # read back from bpfilter
+        assert "127.0.0.2" in listed and "127.0.0.3" in listed
     finally:
         chain.flush()
 
@@ -760,8 +770,8 @@ def test_update_works_on_a_loaded_chain_and_needs_an_existing_one():
     try:
         chain.rules.clear()
         chain.rule(ip4.daddr == "127.0.0.3", verdict=Verdict.DROP).update()
-        listed = subprocess.run(["bfcli", "chain", "get", "--name", chain.name], capture_output=True, text=True)
-        assert "127.0.0.3" in listed.stdout and not chain.counters().attached
+        listed = str(Chain.load(chain.name))             # read back from bpfilter
+        assert "127.0.0.3" in listed and not chain.counters().attached
     finally:
         chain.flush()
     with pytest.raises(BpfilterError) as err:

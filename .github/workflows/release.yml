@@ -1,0 +1,109 @@
+# Builds the sdist and the manylinux wheels (libbpfilter bundled) on every PR and
+# push to main, runs the tests against a real kernel, and publishes:
+#   - to TestPyPI when run by hand (Actions > Build and release > Run workflow),
+#   - to PyPI when a GitHub release is published.
+# Publishing uses PyPI's Trusted Publishing: no token, but each index needs a
+# trusted publisher for this repo, this workflow (release.yml) and the job's
+# environment (testpypi / pypi).
+name: Build and release
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sdist:
+    name: Source distribution
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
+      - run: uv build --sdist
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sdist
+          path: dist/*.tar.gz
+
+  wheels:
+    name: Wheels (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: x86_64, runner: ubuntu-24.04 }
+          - { arch: aarch64, runner: ubuntu-24.04-arm }
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3   # cibuildwheel's build[uv] frontend
+      - uses: pypa/cibuildwheel@v4.3.5
+      - uses: actions/upload-artifact@v7
+        with:
+          name: wheels-${{ matrix.arch }}
+          path: wheelhouse/*.whl
+
+  integration:
+    # The wheel tests in cibuildwheel's container can't load BPF programs: here,
+    # one wheel runs the whole test suite as root, on the runner's kernel.
+    name: Integration tests (root, real kernel)
+    needs: wheels
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: wheels-x86_64
+          path: wheelhouse
+      - uses: astral-sh/setup-uv@v10.3.3
+      - name: Install the cp312 wheel
+        run: |
+          uv venv --python 3.12 "$RUNNER_TEMP/venv"
+          uv pip install --python "$RUNNER_TEMP/venv" wheelhouse/bpyfilter-*-cp312-*.whl pytest
+      - name: Run the tests as root
+        # From outside the checkout, so `import bpyfilter` finds the wheel, not
+        # the source folder.
+        working-directory: ${{ runner.temp }}
+        run: sudo "$RUNNER_TEMP/venv/bin/python" -m pytest -ra "$GITHUB_WORKSPACE/tests"
+
+  publish-testpypi:
+    name: Publish to TestPyPI
+    if: github.event_name == 'workflow_dispatch'
+    needs: [sdist, wheels, integration]
+    runs-on: ubuntu-24.04
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/project/bpyfilter/
+    permissions:
+      id-token: write   # Trusted Publishing
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+      - uses: astral-sh/setup-uv@v10.3.3
+      - run: uv publish --trusted-publishing always --publish-url https://test.pypi.org/legacy/ dist/*
+
+  publish-pypi:
+    name: Publish to PyPI
+    if: github.event_name == 'release'
+    needs: [sdist, wheels, integration]
+    runs-on: ubuntu-24.04
+    environment:
+      name: pypi
+      url: https://pypi.org/project/bpyfilter/
+    permissions:
+      id-token: write   # Trusted Publishing
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+      - uses: astral-sh/setup-uv@v10.3.3
+      - run: uv publish --trusted-publishing always dist/*
