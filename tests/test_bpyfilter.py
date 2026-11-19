@@ -565,23 +565,33 @@ def test_log_layers():
 
 # --- integration: root + libbpfilter (no daemon) --------------------------------
 
-def _daemon_up():
+def _bpfilter_usable():
+    """Can libbpfilter load and pin a chain here? It needs root (or CAP_BPF and
+    CAP_NET_ADMIN) and a writable bpffs, which containers (cibuildwheel's
+    included) usually don't have. Asking for a missing chain isn't enough: that
+    answers ENOENT without touching bpffs."""
     if os.geteuid() != 0:
         return False
+    name = f"probe-{uuid.uuid4().hex[:8]}"
     try:
-        bpyfilter.get(f"probe-{uuid.uuid4().hex}")
-    except BpfilterError as e:
-        return e.errno == 2  # ENOENT: libbpfilter answered "no such chain"
+        Chain(name, Hook.XDP).rule(ip4.proto == "icmp", verdict=Verdict.DROP).install()   # loaded, not attached
+    except OSError:
+        return False
+    bpyfilter.flush(name)
     return True
 
 
-needs_bpfilter = pytest.mark.skipif(not _daemon_up(), reason="needs root and bpfilter 0.8")
+needs_bpfilter = pytest.mark.skipif(not _bpfilter_usable(),
+                                    reason="needs root, bpfilter 0.8 and a writable bpffs")
 
 
 @pytest.fixture
 def cgroup():
     cg = Path("/sys/fs/cgroup") / f"bpyfilter-test-{uuid.uuid4().hex[:8]}"
-    cg.mkdir()
+    try:
+        cg.mkdir()
+    except OSError as e:                # e.g. a read-only cgroupfs, in a container
+        pytest.skip(f"can't create a cgroup: {e}")
     yield cg
     cg.rmdir()
 
