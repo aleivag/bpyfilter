@@ -53,6 +53,10 @@ right capabilities) and a recent kernel.
 Installing from source (the sdist, or this repository) builds against the
 libbpfilter installed on the system, which must be bpfilter 0.8.
 
+bpyfilter's version is the bundled bpfilter's version plus a revision of its own:
+0.8.0.1 is the first release built on bpfilter 0.8.0, 0.8.0.2 the next one, and
+0.8.1.1 would be the first on bpfilter 0.8.1.
+
 ## Hooks
 
 Chains have hooks: a hook is where a chain is attached, and it decides what the chain sees. A hook is called with the options

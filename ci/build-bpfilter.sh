@@ -4,10 +4,17 @@
 # [tool.cibuildwheel] in pyproject.toml), then auditwheel copies libbpfilter,
 # libbpf and their dependencies into each wheel.
 #
-# These are the versions bundled in the published wheels.
+# These are the versions bundled in the published wheels. bpfilter's comes from
+# bpyfilter's own version in pyproject.toml: 0.8.0.N bundles bpfilter v0.8.0.
 set -euxo pipefail
 
-BPFILTER_VERSION=v0.8.0
+cd "$(dirname "$0")/.."
+VERSION=$(sed -n 's/^version = "\(.*\)"$/\1/p' pyproject.toml)
+if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  echo "pyproject.toml: version '$VERSION' isn't <bpfilter version>.<revision>" >&2
+  exit 1
+fi
+BPFILTER_VERSION=v${VERSION%.*}
 LIBBPF_VERSION=v1.8.0
 
 # manylinux_2_34 is AlmaLinux 9: clang compiles bpfilter's BPF stubs, xxd embeds
