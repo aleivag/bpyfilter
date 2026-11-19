@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.3.3
       - run: uv build --sdist
       - uses: actions/upload-artifact@v7
         with:
@@ -42,7 +42,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10   # cibuildwheel's build[uv] frontend
+      - uses: astral-sh/setup-uv@v10.3.3   # cibuildwheel's build[uv] frontend
       - uses: pypa/cibuildwheel@v4.3.5
       - uses: actions/upload-artifact@v7
         with:
@@ -61,7 +61,7 @@ jobs:
         with:
           name: wheels-x86_64
           path: wheelhouse
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.3.3
       - name: Install the cp312 wheel
         run: |
           uv venv --python 3.12 "$RUNNER_TEMP/venv"
@@ -87,7 +87,7 @@ jobs:
         with:
           path: dist
           merge-multiple: true
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.3.3
       - run: uv publish --trusted-publishing always --publish-url https://test.pypi.org/legacy/ dist/*
 
   publish-pypi:
@@ -105,5 +105,5 @@ jobs:
         with:
           path: dist
           merge-multiple: true
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.3.3
       - run: uv publish --trusted-publishing always dist/*
