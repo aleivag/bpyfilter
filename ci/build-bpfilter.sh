@@ -31,9 +31,9 @@ BPFILTER_SRC="$WORK/bpfilter"
 mkdir "$LIBBPF_SRC" "$BPFILTER_SRC"
 # GitHub's archives come from `git archive`, which fills in the version
 # bpfilter's CMake reads when there's no .git.
-curl -fsSL "https://github.com/libbpf/libbpf/archive/${LIBBPF_VERSION}.tar.gz" \
+curl -fsSL --retry 5 --retry-all-errors "https://github.com/libbpf/libbpf/archive/${LIBBPF_VERSION}.tar.gz" \
   | tar -xz -C "$LIBBPF_SRC" --strip-components=1
-curl -fsSL "https://github.com/meta/bpfilter/archive/${BPFILTER_REF}.tar.gz" \
+curl -fsSL --retry 5 --retry-all-errors "https://github.com/meta/bpfilter/archive/${BPFILTER_REF}.tar.gz" \
   | tar -xz -C "$BPFILTER_SRC" --strip-components=1
 
 # libbpf, with its copy of the kernel's BPF UAPI headers (newer than the image's).
