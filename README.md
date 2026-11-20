@@ -14,8 +14,7 @@ bpyfilter is a binding for libbpfilter: you write packet filtering rules in Pyth
 In software development, as in screenwriting, it's better to show, not tell... so here is how it works: nobody can ping this machine.
 
 ```python
-from bpyfilter import ACCEPT, DROP, NF_LOCAL_IN, Chain
-from bpyfilter.match import icmp, ip4
+from bpyfilter import ACCEPT, DROP, NF_LOCAL_IN, Chain, icmp, ip4
 
 chain = Chain("no_ping", NF_LOCAL_IN(priorities=(101, 102)), policy=ACCEPT)   # netfilter: the whole system
 chain.rule(ip4.proto == "icmp", icmp.type == "echo-request", verdict=DROP)
@@ -365,6 +364,7 @@ pip install .                                 # in bpyfilter: builds the Cython 
 |---|---|
 | `Hook`, `Verdict`, `Matcher`, `Op` | `StrEnum`s read from the installed libbpfilter (`Hook.CGROUP_SKB_EGRESS`, `Verdict.DROP`, `Matcher.IP4_DADDR`, `Op.RANGE`...). Plain strings (`"BF_HOOK_XDP"` or `"XDP"`) work too |
 | `ACCEPT`, `DROP`, `CONTINUE`, `XDP`, `CGROUP_SKB_EGRESS`, ... | every verdict and hook, also importable on its own: `from bpyfilter import CGROUP_SKB_EGRESS, DROP` |
+| `ip4`, `ip6`, `tcp`, `udp`, `icmp`, `icmpv6`, `meta`, ... | every match family libbpfilter has, from `bpyfilter.match` or the top level: `from bpyfilter import ip4, tcp` |
 | `NF_LOCAL_IN(priorities=(101, 102))`, `XDP(ifindex="eth0")`, ... | a hook called with its options: a `HookSpec`, which `Chain` takes in place of the hook; checked by libbpfilter right away; `str()` is bfcli's `BF_HOOK_NF_LOCAL_IN{priorities=101-102}` |
 | `bpyfilter.match` | one namespace per field family (`ip4.daddr`...), and `key(*fields)` for composite inline sets |
 | `bpyfilter.setup(bpffs_path="/sys/fs/bpf", with_bpf_token=False, verbose=0)` | start libbpfilter in this process, with options; also a context manager (`with bpyfilter.setup():`). Optional: the first chain operation starts it with the defaults; importing never does |
