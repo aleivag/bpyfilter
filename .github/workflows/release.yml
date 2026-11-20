@@ -25,6 +25,18 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
+      - name: Check the release tag is v + pyproject.toml's version
+        # The version is bumped before the release; tagging without the bump would
+        # publish the previous version's files again. publish-pypi needs this job.
+        if: github.event_name == 'release'
+        run: |
+          version=$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')
+          if [ "$TAG" != "v$version" ]; then
+            echo "::error::release tag '$TAG' doesn't match pyproject.toml's version '$version' (expected 'v$version'): bump the version first, then tag"
+            exit 1
+          fi
+        env:
+          TAG: ${{ github.event.release.tag_name }}
       - uses: astral-sh/setup-uv@v10.3.3
       - run: uv build --sdist
       - uses: actions/upload-artifact@v7
