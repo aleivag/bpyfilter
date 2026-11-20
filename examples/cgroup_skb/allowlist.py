@@ -25,4 +25,4 @@ with scratch_cgroup("bpyfilter-allowlist") as cg:
         for address in ("127.0.0.1", "127.0.0.2", "127.0.0.9"):
             print(f"{address:10}  inside: {show(ping(address, cg))}")
         counters = chain.counters()
-        print("allowed (packets, bytes):", counters.rules[0], "| dropped by the policy:", counters.policy)
+        print("allowed:", counters.rules[0], "| dropped by the policy:", counters.policy)

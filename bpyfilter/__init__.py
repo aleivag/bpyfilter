@@ -11,7 +11,7 @@ hands them to libbpfilter.
     chain.rule(ip4.proto == "icmp", verdict=DROP)
     chain.install()                     # every process in that cgroup: no ping
 
-    chain.counters()        # ChainCounters(rules=[(1, 98)], policy=(3, 206), ...)
+    chain.counters()        # ChainCounters(rules=[Counter(packets=1, bytes=98)], ...)
     chain.flush()
 
 A matcher can be written three ways, freely mixed:
@@ -52,19 +52,19 @@ starts on the first chain operation, or explicitly with options:
 
 Importing bpyfilter never starts it.
 
-Modules: bpyfilter.chain (Chain, Rule), bpyfilter.match (fields, Match, parse),
+Modules: bpyfilter.chain (Chain, Rule, Counter), bpyfilter.match (fields, Match, parse),
 bpyfilter.sets (Set, SetRef, ChainSets, Key, SetMatch), bpyfilter.enums (Hook,
 Verdict, Matcher, Op);
 everything public is re-exported here.
 """
 
 from bpyfilter._core import BpfilterError, is_setup, setup, teardown
-from bpyfilter.chain import Chain, ChainCounters, Rule, chains, flush, flush_all, get
+from bpyfilter.chain import Chain, ChainCounters, Counter, Rule, chains, flush, flush_all, get
 from bpyfilter.enums import Hook, HookSpec, Matcher, Op, Verdict
 from bpyfilter.match import Match
 from bpyfilter.sets import ChainSets, Key, Set, SetMatch, SetRef, key
 
-__all__ = ["BpfilterError", "Chain", "ChainCounters", "ChainSets", "Hook", "HookSpec", "Key", "Match", "Matcher", "Op",
+__all__ = ["BpfilterError", "Chain", "ChainCounters", "ChainSets", "Counter", "Hook", "HookSpec", "Key", "Match", "Matcher", "Op",
            "Rule", "Set", "SetMatch", "SetRef", "Verdict", "chains", "flush", "flush_all", "get", "is_setup", "key",
            "setup", "teardown"]
 

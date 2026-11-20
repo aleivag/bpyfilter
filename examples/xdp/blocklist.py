@@ -31,4 +31,4 @@ with lab() as net:
         banned.add(net.ns_ips[0])
         banned.update_chain()
         report("both banned", net)
-        print("banned:", sorted(banned), " dropped (packets, bytes):", chain.counters().rules[0])
+        print("banned:", sorted(banned), " dropped:", chain.counters().rules[0])

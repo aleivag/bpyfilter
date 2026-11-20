@@ -26,4 +26,4 @@ with scratch_cgroup("bpyfilter-blocklist") as cg:
     with chain:
         for address in [ip_address("127.0.0.1"), *blocked_addresses]:
             print(f"{str(address):15}  outside: {show(ping(address)):8} inside: {show(ping(address, cg))}")
-        print("blocked (packets, bytes):", chain.counters().rules[0])
+        print("blocked:", chain.counters().rules[0])

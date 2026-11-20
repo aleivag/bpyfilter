@@ -30,5 +30,5 @@ with lab() as net, listening(net.host_ip, 8080):
     with Chain("example_nf_no_ping", NF_LOCAL_IN(priorities=(101, 102)), policy=ACCEPT).rule(
             ip4.proto == "icmp", icmp.type == "echo-request", verdict=DROP) as chain:
         report("installed", net)
-        print("dropped (packets, bytes):", chain.counters().rules[0])
+        print("dropped:", chain.counters().rules[0])
     report("after", net)

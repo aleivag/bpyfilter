@@ -56,6 +56,17 @@ def test_every_hook_and_verdict_is_also_top_level():
     assert not hasattr(bpyfilter, "CGROUP_EGRESS")                # bpfilter 0.6's name: gone
 
 
+def test_a_counter_is_a_named_tuple():
+    from bpyfilter import Counter
+    after = Counter(packets=40, bytes=2960)
+    assert after == (40, 2960) and after[0] == 40 and after.bytes == 2960
+    packets, size = after
+    assert (packets, size) == (40, 2960)
+    assert after - Counter(10, 740) == Counter(packets=30, bytes=2220)
+    assert after - (10, 740) == (30, 2220)                       # a plain tuple too
+    assert repr(after) == "Counter(packets=40, bytes=2960)"
+
+
 @pytest.mark.parametrize("value, text", [
     ("1.1.1.1", "1.1.1.1"),
     (ip_address("1.1.1.1"), "1.1.1.1"),
@@ -643,9 +654,9 @@ def test_missing_chain():
 @needs_bpfilter
 @pytest.mark.parametrize("example, expected", [
     ("cgroup_skb/blocklist.py", [r"127\.0\.0\.1\s+outside: ok\s+inside: ok", r"127\.0\.0\.2\s+outside: ok\s+inside: BLOCKED",
-                      r"blocked \(packets, bytes\): \(2, \d+\)"]),
+                      r"blocked: Counter\(packets=2, bytes=\d+\)"]),
     ("cgroup_skb/allowlist.py", [r"127\.0\.0\.1\s+inside: ok", r"127\.0\.0\.2\s+inside: BLOCKED",
-                      r"dropped by the policy: \(2, \d+\)"]),
+                      r"dropped by the policy: Counter\(packets=2, bytes=\d+\)"]),
     ("cgroup_skb/not_in_set.py", [r"127\.0\.0\.1\s+inside: ok", r"127\.0\.0\.2\s+inside: BLOCKED",
                        r"127\.0\.0\.3\s+inside: ok"]),
     ("cgroup_skb/traffic_meter.py", [r"icmp\s+3 packets", r"udp\s+5 packets", r"total\s+8 packets"]),
@@ -673,7 +684,7 @@ def test_missing_chain():
     ("netfilter/no_ping.py", [r"installed\s+ns -> host: BLOCKED\s+host -> 127\.0\.0\.1: BLOCKED\s+tcp: ok",
                               r"after\s+ns -> host: ok"]),
     ("netfilter/local_out.py", [r"127\.0\.0\.1\s+ok", r"127\.0\.0\.2\s+BLOCKED",
-                                r"blocked \(packets, bytes\): \(2, \d+\)"]),
+                                r"blocked: Counter\(packets=2, bytes=\d+\)"]),
 ])
 def test_examples(example, expected):
     result = subprocess.run([sys.executable, str(EXAMPLES / example)], capture_output=True, text=True,

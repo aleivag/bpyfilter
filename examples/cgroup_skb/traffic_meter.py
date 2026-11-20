@@ -32,4 +32,4 @@ with scratch_cgroup("bpyfilter-meter") as cg:
         print(f"command exited with {returncode}; what it sent:")
         for name, (packets, size) in zip(protocols, counters.rules):
             print(f"  {name:5} {packets:4} packets  {size:6} bytes")
-        print(f"  total {counters.policy[0]:4} packets  {counters.policy[1]:6} bytes (all reached the policy)")
+        print(f"  total {counters.policy.packets:4} packets  {counters.policy.bytes:6} bytes (all reached the policy)")

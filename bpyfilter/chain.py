@@ -114,15 +114,30 @@ class ChainDiff(str):
         return str(self) or "(no differences)"
 
 
+class Counter(NamedTuple):
+    """How many packets, and bytes, a rule (or the policy, or errors) has counted.
+
+    Still a tuple: `packets, size = counter` and `counter == (1, 98)` work;
+    `after - before` is what was counted in between.
+    """
+
+    packets: int
+    bytes: int
+
+    def __sub__(self, other):
+        packets, size = other
+        return Counter(self.packets - packets, self.bytes - size)
+
+
 class ChainCounters(NamedTuple):
-    """(packets, bytes) per rule (None if the rule has no counter), policy, errors."""
+    """A Counter per rule (None if the rule has no counter), for the policy, and for errors."""
 
     hook: str
     policy_verdict: str
     attached: bool
-    rules: list
-    policy: tuple
-    error: tuple
+    rules: list[Counter | None]
+    policy: Counter
+    error: Counter
 
 
 @dataclass(slots=True)
@@ -559,7 +574,10 @@ def _key_from_text(text):
 
 def get(name) -> ChainCounters:
     """Counters (and hook/policy/attached state) of chain `name`."""
-    return ChainCounters(*chain_get(name))
+    hook, policy_verdict, attached, rules, policy, error = chain_get(name)
+    return ChainCounters(hook, policy_verdict, attached,
+                         [None if c is None else Counter(*c) for c in rules],
+                         Counter(*policy), Counter(*error))
 
 
 def flush(name):
@@ -578,4 +596,4 @@ def flush_all():
     ruleset_flush()
 
 
-__all__ = ["Chain", "ChainCounters", "ChainDiff", "Rule", "chains", "flush", "flush_all", "get"]
+__all__ = ["Chain", "ChainCounters", "ChainDiff", "Counter", "Rule", "chains", "flush", "flush_all", "get"]
