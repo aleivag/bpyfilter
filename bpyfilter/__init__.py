@@ -4,8 +4,7 @@ bpfilter turns filtering rules into BPF programs and attaches them to a hook:
 XDP, TC, netfilter, or a cgroup. bpyfilter builds those rules from Python and
 hands them to libbpfilter.
 
-    from bpyfilter import ACCEPT, CGROUP_SKB_EGRESS, DROP, Chain
-    from bpyfilter.match import ip4
+    from bpyfilter import ACCEPT, CGROUP_SKB_EGRESS, DROP, Chain, ip4
 
     chain = Chain("no_ping", CGROUP_SKB_EGRESS(cgpath="/sys/fs/cgroup/myapp"), policy=ACCEPT)
     chain.rule(ip4.proto == "icmp", verdict=DROP)
@@ -16,7 +15,7 @@ hands them to libbpfilter.
 
 A matcher can be written three ways, freely mixed:
 
-    ip4.daddr == "1.1.1.1"                       # bpyfilter.match fields
+    ip4.daddr == "1.1.1.1"                       # fields: ip4, tcp, meta... (bpyfilter.match)
     "ip4.daddr eq 1.1.1.1"                       # bfcli's text
     (Matcher.IP4_DADDR, Op.EQ, "1.1.1.1")        # enums, for code that builds rules
 
@@ -61,6 +60,7 @@ everything public is re-exported here.
 from bpyfilter._core import BpfilterError, is_setup, setup, teardown
 from bpyfilter.chain import Chain, ChainCounters, Counter, Rule, chains, flush, flush_all, get
 from bpyfilter.enums import Hook, HookSpec, Matcher, Op, Verdict
+from bpyfilter import match as _match
 from bpyfilter.match import Match
 from bpyfilter.sets import ChainSets, Key, Set, SetMatch, SetRef, key
 
@@ -71,3 +71,8 @@ __all__ = ["BpfilterError", "Chain", "ChainCounters", "ChainSets", "Counter", "H
 # Every hook and verdict at the top level too: `from bpyfilter import CGROUP_SKB_EGRESS, ACCEPT, DROP`.
 globals().update({name: m for enum in (Hook, Verdict) for name, m in enum.__members__.items()})
 __all__ += [name for enum in (Hook, Verdict) for name in enum.__members__]
+
+# And every match family (ip4, tcp, meta, icmp...: whatever libbpfilter has):
+# `from bpyfilter import ip4, tcp`, the same objects as bpyfilter.match's.
+globals().update({family: getattr(_match, family) for family in _match._families})
+__all__ += list(_match._families)

@@ -56,6 +56,16 @@ def test_every_hook_and_verdict_is_also_top_level():
     assert not hasattr(bpyfilter, "CGROUP_EGRESS")                # bpfilter 0.6's name: gone
 
 
+def test_every_match_family_is_also_top_level():
+    from bpyfilter import icmp, ip4, meta, tcp
+    import bpyfilter.match
+    assert (ip4, tcp, icmp, meta) == (bpyfilter.match.ip4, bpyfilter.match.tcp, bpyfilter.match.icmp, bpyfilter.match.meta)
+    assert all(getattr(bpyfilter, family) is getattr(bpyfilter.match, family) for family in bpyfilter.match._families)
+    assert set(bpyfilter.match._families) <= set(bpyfilter.__all__)
+    assert len(bpyfilter.__all__) == len(set(bpyfilter.__all__))     # no family hides another name
+    assert isinstance(ip4.daddr == "1.1.1.1", bpyfilter.Match)
+
+
 def test_a_counter_is_a_named_tuple():
     from bpyfilter import Counter
     after = Counter(packets=40, bytes=2960)
