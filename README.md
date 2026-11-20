@@ -62,7 +62,11 @@ libbpfilter installed on the system, which must be bpfilter 0.8.
 
 bpyfilter's version is the bundled bpfilter's version plus a revision of its own:
 0.8.0.1 is the first release built on bpfilter 0.8.0, 0.8.0.2 the next one, and
-0.8.1.1 would be the first on bpfilter 0.8.1.
+0.8.1.1 would be the first on bpfilter 0.8.1. To stay on one bpfilter line, pin
+the first numbers: `bpyfilter==0.8.*` gets every release built on bpfilter 0.8
+(0.8.0.1, 0.8.1.1...), and `bpyfilter==0.8.0.*` only those on bpfilter 0.8.0.
+Careful with `~=`, which counts the parts you give it: `~=0.8.0` is
+`==0.8.*`, but `~=0.8.0.1` is `==0.8.0.*`.
 
 ## Hooks
 
