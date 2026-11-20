@@ -1,9 +1,10 @@
 #!/bin/bash
-# A throwaway Lima VM that builds bpfilter from source, to develop and test bpyfilter against it.
-#   dev/vm create            create it, boot it, build bpfilter v0.8.0 (takes a while)
-#   dev/vm test [ARGS]       install this checkout in the VM and run the tests (ARGS go to pytest)
+# A throwaway Lima VM that builds bpyfilter's wheel the way CI does, and tests it as root.
+#   dev/vm create            create it, boot it, bake the build image (takes a while)
+#   dev/vm test [ARGS]       build this checkout's wheel, install it, run the tests (ARGS go to pytest)
 #   dev/vm shell [CMD ...]   a root shell (or one command) in the VM, in /src/bpyfilter
-#   dev/vm bpfilter REF      rebuild bpfilter at another tag, branch or commit
+#   dev/vm reprovision       run the provisioning again, and rebuild the build image
+#   dev/vm bpfilter REF      rebuild the build image with bpfilter at a tag, branch or commit
 #   dev/vm delete            throw it away
 # VM=name to run several; LIMACTL=path if limactl isn't on your PATH.
 set -euo pipefail
@@ -19,17 +20,13 @@ case "${1:-}" in
   create)
     mount=".mounts = [{\"location\": \"$ROOT\", \"mountPoint\": \"/src/bpyfilter\", \"writable\": true}]"
     lima create --name "$VM" --tty=false --set "$mount" "$ROOT/dev/lima.yaml"
-    # Building bpfilter can outlast limactl's 10-minute wait: if it gives up, the build
-    # keeps going in the VM; `dev/vm shell cat /var/lib/bpyfilter-dev/bpfilter-ref` when done.
+    # Baking the build image can outlast limactl's 10-minute wait: if it gives up, the
+    # build keeps going in the VM; `dev/vm shell podman images` shows it when done.
     lima start --tty=false "$VM"
     ;;
   test)
     shift
-    in_vm sh -c 'cd /tmp \
-      && rm -rf /src/bpyfilter/build /src/bpyfilter/*.egg-info \
-      && python3 -m pip install -q --root-user-action=ignore --force-reinstall --no-deps /src/bpyfilter \
-      && rm -rf /src/bpyfilter/build /src/bpyfilter/*.egg-info \
-      && python3 -m pytest -p no:cacheprovider -ra /src/bpyfilter/tests "$@"' test "$@"
+    in_vm bash /src/bpyfilter/dev/test.sh "$@"
     ;;
   shell)
     shift
@@ -39,6 +36,9 @@ case "${1:-}" in
       in_vm "$@"
     fi
     ;;
+  reprovision)
+    in_vm env FORCE=1 bash /src/bpyfilter/dev/provision.sh
+    ;;
   bpfilter)
     in_vm env FORCE=1 bash /src/bpyfilter/dev/provision.sh "${2:?usage: dev/vm bpfilter REF}"
     ;;
@@ -46,7 +46,7 @@ case "${1:-}" in
     lima delete -f "$VM"
     ;;
   *)
-    sed -n '2,8s/^# \{0,1\}//p' "$0"
+    sed -n '2,9s/^# \{0,1\}//p' "$0"
     exit 1
     ;;
 esac

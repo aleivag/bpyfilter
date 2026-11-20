@@ -1,4 +1,4 @@
-# A throwaway Lima VM to build and test bpyfilter against bpfilter built from source.
+# A throwaway Lima VM to build bpyfilter's wheel the way CI does, and test it as root.
 # Don't use this file directly: `dev/vm create` mounts this checkout at /src/bpyfilter.
 minimumLimaVersion: 2.0.0
 
