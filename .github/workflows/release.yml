@@ -1,7 +1,8 @@
 # Builds the sdist and the manylinux wheels (libbpfilter bundled) on every PR and
 # push to main, runs the tests against a real kernel, and publishes:
 #   - to TestPyPI when run by hand (Actions > Build and release > Run workflow),
-#   - to PyPI when a GitHub release is published.
+#   - to PyPI when a GitHub release is published, then attaches the same files
+#     to that release.
 # Publishing uses PyPI's Trusted Publishing: no token, but each index needs a
 # trusted publisher for this repo, this workflow (release.yml) and the job's
 # environment (testpypi / pypi).
@@ -107,3 +108,21 @@ jobs:
           merge-multiple: true
       - uses: astral-sh/setup-uv@v10.3.3
       - run: uv publish --trusted-publishing always dist/*
+
+  github-release:
+    # The files PyPI accepted, attached to the release that triggered this run.
+    name: Attach to the GitHub release
+    if: github.event_name == 'release'
+    needs: publish-pypi
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write   # upload release assets
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+      - run: gh release upload "$TAG" dist/* --clobber --repo "$GITHUB_REPOSITORY"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
