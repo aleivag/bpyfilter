@@ -22,5 +22,5 @@ with lab() as net, listening(net.host_ip, 8080):
     with Chain("example_xdp_drop_ping", XDP(ifindex=net.host_if), policy=ACCEPT).rule(
             ip4.proto == "icmp", verdict=DROP) as chain:
         print(f"{'XDP on ' + net.host_if:16}ping: {show(net.ping_host()):8} tcp: {show(net.connects_to_host(8080))}")
-        print("dropped (packets, bytes):", chain.counters().rules[0])
+        print("dropped:", chain.counters().rules[0])
     print(f"{'after':16}ping: {show(net.ping_host()):8} tcp: {show(net.connects_to_host(8080))}")
