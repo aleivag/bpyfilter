@@ -634,6 +634,7 @@ def test_cgroup_firewall(cgroup):
         assert counters.attached
         assert counters.hook == Hook.CGROUP_SKB_EGRESS
         assert counters.rules[0][0] >= 1
+        assert counters.parser_drop == (0, 0)   # well-formed pings: nothing for the parser to drop
     finally:
         assert chain.flush() is chain
     assert _ping(cgroup)                # flushed: allowed again

@@ -23,7 +23,8 @@ chain.install()                          # into the kernel: nobody can ping us n
 chain.counters()
 # ChainCounters(hook='BF_HOOK_NF_LOCAL_IN', policy_verdict='ACCEPT', attached=True,
 #               rules=[Counter(packets=2, bytes=196)],
-#               policy=Counter(packets=0, bytes=0), error=Counter(packets=0, bytes=0))
+#               policy=Counter(packets=0, bytes=0), error=Counter(packets=0, bytes=0),
+#               parser_drop=Counter(packets=0, bytes=0))
 chain.flush()                            # and we're pingable again
 ```
 
@@ -387,7 +388,7 @@ pip install .                                 # in bpyfilter: builds the Cython 
 | `chain.clean(rules=True, sets=True)` | remove the chain's rules, its sets, or both, here only (`update()` sends it); a set a remaining rule uses can't go (`ValueError`) |
 | `str(chain)`, `chain.to_bfcli(**hookopts)` | the chain as bfcli's text (with the last `install()`'s hook options, or these) |
 | `chain2.diff(chain1, context=3)`, `chain.diff()`, `chain.diff(name)` | how `chain2` differs from `chain1`, as a unified diff of their bfcli text (set elements one per line, sorted); no argument: against bpfilter's chain of the same name, so what `update()` would change; a name: against that chain in bpfilter. `context=` is the unchanged lines shown around each change (3, as `git diff`; `0` for only the changes, `math.inf` for the whole chain). Empty (falsy) if they're the same |
-| `chain.counters()` / `bpyfilter.get(name)` | a `Counter(packets, bytes)` per rule, plus policy and error counters; `after - before` is the difference |
+| `chain.counters()` / `bpyfilter.get(name)` | a `Counter(packets, bytes)` per rule, plus policy, error and parser-drop (malformed packets) counters; `after - before` is the difference |
 | `chain.flush()` / `bpyfilter.flush(name)` / `bpyfilter.flush_all()` | detach and delete (not "empty the rules": the chain is gone); `chain.flush()` returns the chain |
 
 Errors from libbpfilter raise `BpfilterError` (an `OSError`); invalid hooks,

@@ -298,7 +298,8 @@ def chain_set(str name, str hook, str policy, list sets, list rules, dict hookop
 
 
 def chain_get(str name):
-    """(hook, policy, attached, [rule counters], policy counter, error counter).
+    """(hook, policy, attached, [rule counters], policy counter, error counter,
+    parser-drop counter).
 
     Counters are (packets, bytes) tuples, None for rules without counters.
     """
@@ -319,7 +320,8 @@ def chain_get(str name):
         return (bf_hook_to_str(chain.hook).decode(), bf_verdict_to_str(chain.policy).decode(),
                 hookopts != NULL, rule_counters,
                 (chain.policy_counters.count, chain.policy_counters.size),
-                (chain.error_counters.count, chain.error_counters.size))
+                (chain.error_counters.count, chain.error_counters.size),
+                (chain.parser_drop_counters.count, chain.parser_drop_counters.size))
     finally:
         bf_hookopts_free(&hookopts)
         bf_chain_free(&chain)

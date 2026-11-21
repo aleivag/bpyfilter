@@ -130,7 +130,8 @@ class Counter(NamedTuple):
 
 
 class ChainCounters(NamedTuple):
-    """A Counter per rule (None if the rule has no counter), for the policy, and for errors."""
+    """A Counter per rule (None if the rule has no counter), for the policy, for errors,
+    and for packets the parser dropped (malformed: a truncated VLAN tag...)."""
 
     hook: str
     policy_verdict: str
@@ -138,6 +139,7 @@ class ChainCounters(NamedTuple):
     rules: list[Counter | None]
     policy: Counter
     error: Counter
+    parser_drop: Counter
 
 
 @dataclass(slots=True)
@@ -574,10 +576,10 @@ def _key_from_text(text):
 
 def get(name) -> ChainCounters:
     """Counters (and hook/policy/attached state) of chain `name`."""
-    hook, policy_verdict, attached, rules, policy, error = chain_get(name)
+    hook, policy_verdict, attached, rules, policy, error, parser_drop = chain_get(name)
     return ChainCounters(hook, policy_verdict, attached,
                          [None if c is None else Counter(*c) for c in rules],
-                         Counter(*policy), Counter(*error))
+                         Counter(*policy), Counter(*error), Counter(*parser_drop))
 
 
 def flush(name):
