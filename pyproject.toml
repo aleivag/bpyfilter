@@ -4,10 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bpyfilter"
-# The bundled bpfilter's version, plus bpyfilter's own revision: 0.8.0.1 is the
-# first release built on bpfilter 0.8.0. ci/build-bpfilter.sh builds the bpfilter
-# tag named by the first three numbers.
-version = "0.8.0.2"
+# bpfilter-main: this branch builds against bpfilter's main (BPFILTER_REF in
+# before-all below), not a release. A placeholder version, never published (the
+# release job only publishes a tag matching it), until bpfilter tags its next
+# release: then the version becomes <that release>.1 and BPFILTER_REF goes.
+version = "0.9.0.0.dev0"
 description = "Python bindings for bpfilter 0.8: BPF-based packet filtering, from Python"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -53,7 +54,7 @@ build-frontend = "build[uv]"
 # musllinux: bpfilter isn't tested on musl. Free-threaded Python: bpyfilter's
 # thread safety (libbpfilter's context is process-wide) isn't checked yet.
 skip = ["*-musllinux_*", "cp3??t-*"]
-before-all = "bash ci/build-bpfilter.sh"
+before-all = "BPFILTER_REF=main bash ci/build-bpfilter.sh"   # bpfilter-main: upstream's main
 test-groups = ["test"]
 test-sources = ["tests", "examples"]
 # The container can't load BPF programs, so the integration tests skip
