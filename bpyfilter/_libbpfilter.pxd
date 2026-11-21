@@ -187,6 +187,7 @@ cdef extern from "bpfilter/chain.h":
         bf_list rules
         bf_counter policy_counters
         bf_counter error_counters
+        bf_counter parser_drop_counters     # bpfilter > 0.8.0
 
     int bf_chain_new(bf_chain **chain, const char *name, bf_hook hook,
                      bf_verdict policy, bf_hashset *sets, bf_list *rules)
